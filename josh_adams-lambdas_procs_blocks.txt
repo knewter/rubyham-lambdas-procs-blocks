@@ -1,0 +1,222 @@
+Opening slide
+
+Lambdas, Procs, and Blocks in Ruby
+Josh Adams
+Isotope11 (http://www.isotope11.com)
+
+http://ruby-doc.org/ruby-1.8/classes/Proc.html
+
+---
+
+First: What's a lambda?
+- Lambdas are closures
+
+Great.  What's a closure?
+- A closure is a function that can bind variables to the lexical environment.
+
+Do what now?
+- Yeah, it's actually pretty straightforward.  You can break out a function as an object to be passed around, and you can pass in variables that are then only valid in that function's scope, etc. etc.
+
+Show me some code, my head hurts.
+- Fine.
+
+---
+
+Creating a block
+
+  some_proc = Proc.new { puts "James has an unhealthy desire for pony love." }
+  some_proc.call
+
+  --(jadams@quant)-(4/pts/4)-(1831/29-Jun-10)--
+  --($:~/Desktop/rubyham-june-lambdas-procs-blocks)-- ruby example1-proc.rb 
+  James has an unhealthy desire for pony love.
+
+---
+
+Insert pony photo: http://s0.geograph.org.uk/photos/50/65/506540_f3874078.jpg
+Superimpose james' isotope11 photo
+
+---
+
+Wasn't that insanely easy?
+- Yes.
+
+So why are they useful?
+- You can do really cool stuff with them, I swear.  It's like creating a function, but hey that function's an object and you can do fun stuff with it.  So put it in an array.  That's fun, right?
+
+  proc1 = Proc.new{|x| puts "James has an unhealthy love for #{x}." }
+  proc2 = Proc.new{|x| puts "Consequently, we no longer allow #{x} in our offices." }
+  proc3 = Proc.new{|x| puts "Please, if you've brought any #{x}, do not inform James." }
+  procs = [proc1, proc2, proc3]
+
+  awkward_love_recipients = ["Ponies", "Sheep", "Venezuelans", "Predobear statuettes"]
+
+  awkward_love_recipients.each{|r| procs.each{|p| p.call(r) } }
+
+  --(jadams@quant)-(6/pts/4)-(1837/29-Jun-10)--
+  --($:~/Desktop/rubyham-june-lambdas-procs-blocks)-- ruby example2-proc-in-array.rb 
+  James has an unhealthy love for Ponies.
+  Consequently, we no longer allow Ponies in our offices.
+  Please, if you've brought any Ponies, do not inform James.
+  James has an unhealthy love for Sheep.
+  Consequently, we no longer allow Sheep in our offices.
+  Please, if you've brought any Sheep, do not inform James.
+  James has an unhealthy love for Venezuelans.
+  Consequently, we no longer allow Venezuelans in our offices.
+  Please, if you've brought any Venezuelans, do not inform James.
+  James has an unhealthy love for Predobear statuettes.
+  Consequently, we no longer allow Predobear statuettes in our offices.
+  Please, if you've brought any Predobear statuettes, do not inform James.
+
+---
+
+That's not really a real-world example.
+- I don't care, I thought you people should know how depraved James was.  Also, if you think about it, that's an example that's a bit harder to pull of with straightforward functions without invoking eval.  This eval-less-ness is one of the awesome things that closures give you in general.
+
+---
+
+Any other ways to create Procs?
+- There are four: Proc.new, Kernel's proc method, Kernel's lambda method, and implicitly (i.e. passing a block as an arg)
+
+  proc1 = Proc.new { puts "Hey, Proc.new made me." }
+  proc2 = proc { puts "Kernel.proc made me" }
+  proc3 = lambda { puts "lambda made me" }
+
+  def proc_four_example
+    puts "hey from inside the method!"
+    yield
+  end
+
+  proc1.call
+  proc2.call
+  proc3.call
+  proc_four_example { puts "and hey from the implicit proc" }
+
+  --(jadams@quant)-(8/pts/4)-(1846/29-Jun-10)--
+  --($:~/Desktop/rubyham-june-lambdas-procs-blocks)-- ruby example3-procs-four-ways.rb 
+  Hey, Proc.new made me.
+  Kernel.proc made me
+  lambda made me
+  hey from inside the method!
+  and hey from the implicit proc
+
+---
+
+What are the differences?
+- Proc.new's the 'standard' way of making a Proc.
+- Kernel#proc is equivalent to Proc.new in Ruby 1.9, but it's equivalent to lambda in Ruby 1.8.  Consequently, it's probably best to use Proc.new if you want your code to be portable between Ruby 1.8/1.9 without unexpected gotchas cropping up.
+
+lambdas differ from Procs in only one way: control flow keywords.  If you have a return in a proc, it will dump you out of the proc as well as from the calling method.  Not so with a lambda.  If you want more details on this, you can find them, at http://www.skorks.com/2010/05/ruby-procs-and-lambdas-and-the-difference-between-them/
+
+---
+
+So what now?
+- Heck, let's learn from the Proc RDoc.  It doesn't have that many methods available.
+
+  ==   []   arity   binding   call   clone   dup   new   to_proc   to_s   
+
+ok.  So == will return true if two procs are exactly equal.  This only really applies if they are clones of each other, or REALLY simple procs.
+
+  p1 = Proc.new { "foo" }
+  p2 = Proc.new { "foo" }
+  p3 = p1.dup
+  p4 = Proc.new {|a| "foo" }
+  p5 = Proc.new {|b| "foo" }
+  p6 = Proc.new {|c| puts c}
+  p7 = Proc.new {|c| puts c}
+
+  puts "p1 == p2: #{p1 == p2}"
+  puts "p1 == p3: #{p1 == p3}"
+  puts "p2 == p3: #{p2 == p3}"
+  puts "p1 == p4: #{p1 == p4}"
+  puts "p4 == p5: #{p4 == p5}"
+  puts "p6 == p7: #{p6 == p7}"
+
+  puts "BUT WAIT!  You can make 2 procs that output the same string equal!"
+
+  string = "bar"
+  p8 = Proc.new { string }
+  p9 = Proc.new { string }
+
+  puts "p8 == p9: #{p8 == p9}"
+
+  puts "JUST KIDDING.  I was told that was the case, but this test fails for me in both ruby1.8 and ruby1.9"
+
+  --(jadams@quant)-(17/pts/4)-(1932/29-Jun-10)--
+  --($:~/Desktop/rubyham-june-lambdas-procs-blocks)-- ruby1.9 example4-equality-test.rb 
+  p1 == p2: false
+  p1 == p3: true
+  p2 == p3: false
+  p1 == p4: false
+  p4 == p5: false
+  p6 == p7: false
+  BUT WAIT!  You can make 2 procs that output the same string equal!
+  p8 == p9: false
+  JUST KIDDING.  I was told that was the case, but this test fails for me in both ruby1.8 and ruby1.9
+
+So yeah, == is only really useful if the procs are clones of one another.
+
+---
+
+[]
+
+This is a shorthand form of #call.  It's kind of retarded looking and I don't suggest using it unless you want to really confuse someone :)  Still, good to know
+
+  p = Proc.new {|a| puts "you sent in #{a}" }
+
+  p.call('foo')
+  p['bar']
+
+  --(jadams@quant)-(18/pts/4)-(1933/29-Jun-10)--
+  --($:~/Desktop/rubyham-june-lambdas-procs-blocks)-- ruby example5-array-style-calls.rb 
+  you sent in foo
+  you sent in bar
+
+---
+
+arity
+
+This method returns the number of arguments that would not be ignored.  From the RDoc:
+
+  Proc.new {}.arity          #=>  0
+  Proc.new {||}.arity        #=>  0
+  Proc.new {|a|}.arity       #=>  1
+  Proc.new {|a,b|}.arity     #=>  2
+  Proc.new {|a,b,c|}.arity   #=>  3
+  Proc.new {|*a|}.arity      #=> -1
+  Proc.new {|a,*b|}.arity    #=> -2
+
+---
+
+binding
+
+Returns the binding associated with the proc.  This is basically the local environment where variables are stored, etc (lexical closure, if this means anything to you)
+
+Again, from the RDoc:
+
+  def fred(param)
+    proc {}
+  end
+
+  b = fred(99)
+  eval("param", b.binding)   #=> 99
+  eval("param", b)           #=> 99
+
+So you see, eval can take a particular binding as its second argument (did you even know eval took more than one?) and this function is returning a proc in the local lexical closure of the method as called...so param == 99
+
+---
+
+clone and dup are as they are everywhere else.  to_proc returns the proc itself.  to_s returns the object in a string representation.
+
+---
+
+
+I lied to you earlier.
+- Why?
+
+Blocks aren't really objects in Ruby.  But you can make them into an object pretty easily.  We already did it, with Proc.new, earlier.  But when I said blocks were objects, it was entirely a lie.  I can't believe you bought that.  Geezus, what a sucker you are.
+
+---
+
+What next?
+- It's pretty cool to see Bindings in Ruby.  It's basically a way of passing around the current lexical scope.  We discussed them briefly, but it's neat to see more.  See http://onestepback.org/index.cgi/Tech/Ruby/RubyBindings.rdoc for a good example / tutorial.
